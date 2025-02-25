@@ -1,10 +1,11 @@
-import { Controller, Post, Body, Headers, HttpException, HttpStatus } from '@nestjs/common';
+import { Controller, Post, Body, Headers, HttpException, HttpStatus, Get, UnauthorizedException } from '@nestjs/common';
 import { AuthService } from './auth.service';
 
 
 @Controller('auth')
 export class AuthController {
-    constructor(private readonly authService: AuthService) {}
+    firebaseAdmin: any;
+    constructor(private readonly authService: AuthService) { }
 
     @Post('register')
     async register(@Body() body: { email: string; password: string; displayName?: string }) {
@@ -21,13 +22,14 @@ export class AuthController {
             );
         }
     }
-    
+
     @Post('login')
     async login(@Body() body: { email: string; password: string }) {
-        const token = await this.authService.loginUser(body);
+        const { customToken, user } = await this.authService.loginUser(body);
         return {
             message: 'Login successful',
-            token: token,
+            token: customToken, // カスタムトークンを返す
+            user: user // ユーザー情報も合わせて返す
         };
     }
 
@@ -49,6 +51,26 @@ export class AuthController {
                 error.message || 'Logout failed',
                 HttpStatus.BAD_REQUEST
             );
+        }
+    }
+
+    // auth.controller.ts に追加
+    @Get('user')
+    async getUser(@Headers('authorization') authHeader: string) {
+        try {
+            if (!authHeader) {
+                throw new UnauthorizedException('No token provided');
+            }
+
+            const bearerToken = authHeader.split(' ')[1];
+            if (!bearerToken) {
+                throw new UnauthorizedException('Invalid token format');
+            }
+
+            const userData = await this.authService.getUserFromToken(bearerToken);
+            return { user: userData };
+        } catch (error) {
+            throw new UnauthorizedException(error.message || 'Invalid token');
         }
     }
 }

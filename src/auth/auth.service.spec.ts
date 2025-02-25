@@ -1,7 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { AuthService } from './auth.service';
 import * as admin from 'firebase-admin';
-import { Injectable, Injest, BadRequestException } from '@nestjs/common';
 
 describe('AuthService', () => {
   let service: AuthService;
